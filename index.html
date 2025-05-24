@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>-Echo Charlie Pad- Registro de Emisoras de Radio</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.25.7/babel.min.js"></script>
+  <link href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body {
+      background-image: url('https://i.ibb.co/Fdz34mn/OR4EJM0.jpg');
+      background-size: cover;
+      margin: 0;
+      transition: all 0.3s ease;
+      background-attachment: fixed;
+    }
+    .military-title {
+      font-family: 'Black Ops One', sans-serif;
+    }
+    .add-edit-container,
+    .captured-container,
+    .chart-container {
+      background-color: #fff;
+      color: #000;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .add-edit-container.dark,
+    .captured-container.dark,
+    .chart-container.dark {
+      background-color: #000;
+      color: #fff;
+    }
+    table {
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    table.dark {
+      background-color: #000;
+      color: #fff;
+    }
+    th, td {
+      transition: background-color 0.3s ease, color 0.3s ease;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    th.dark, td.dark {
+      background-color: #000;
+      color: #fff;
+    }
+    .dark input,
+    .dark textarea,
+    .dark select {
+      background-color: #333;
+      color: #fff;
+      border-color: #555;
+    }
+    .dark input::placeholder,
+    .dark textarea::placeholder {
+      color: #bbb;
+    }
+    .load-data-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+    .action-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .action-btn {
+      padding: 0.25rem;
+      font-size: 0.75rem;
+      border-radius: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+    .signal-strength-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .signal-strength-input {
+      width: 70%;
+    }
+    .ssb-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .modulation-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .frequency-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .notes-cell {
+      max-width: 150px;
+      width: 150px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      position: relative;
+      height: 1.5em;
+      line-height: 1.5em;
+      text-align: center;
+    }
+    .notes-cell:hover {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+    .notes-tooltip {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      z-index: 100;
+      background-color: #333;
+      color: #fff;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      max-width: 300px;
+      width: max-content;
+      top: calc(-100% - 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: normal;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+      pointer-events: none;
+    }
+    .dark .notes-tooltip {
+      background-color: #555;
+      color: #fff;
+    }
+    .notes-cell:hover .notes-tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+    .export-load-btn {
+      px-4 py-2;
+    }
+    .band-count-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .footer-container {
+      text-align: center;
+      padding: 1rem;
+      background-color: #fff;
+      color: #000;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      border-radius: 0.5rem;
+    }
+    .dark .footer-container {
+      background-color: #000;
+      color: #fff;
+    }
+    .footer-container a {
+      margin-right: 1rem;
+    }
+    .footer-container img {
+      vertical-align: middle;
+      width: 24px;
+      height: 24px;
+    }
+    .stats-card {
+      text-align: center;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 2.5rem;
+      width: 100%;
+      max-width: 72rem;
+    }
+    .paginator {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+    }
+    .paginator button {
+      background-color: #e5e7eb;
+      color: #000;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .paginator button:hover:not(:disabled) {
+      background-color: #d1d5db;
+    }
+    .paginator button:disabled {
+      background-color: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+    .paginator .active {
+      background-color: #3b82f6;
+      color: #fff;
+    }
+    .dark .paginator button {
+      background-color: #374151;
+      color: #fff;
+    }
+    .dark .paginator button:hover:not(:disabled) {
+      background-color: #4b5563;
+    }
+    .dark .paginator button:disabled {
+      background-color: #1f2937;
+      color: #6b7280;
+    }
+    .dark .paginator .active {
+      background-color: #1d4ed8;
+    }
+    .chart-filter-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
+    .unit-switch {
+      display: flex;
+      background-color: #e5e7eb;
+      border-radius: 0.25rem;
+      overflow: hidden;
+      height: 1.75rem;
+    }
+    .dark .unit-switch {
+      background-color: #374151;
+    }
+    .unit-switch button {
+      flex: 1;
+      padding: 0.25rem 0.5rem;
+      border: none;
+      background: none;
+      color: #000;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .dark .unit-switch button {
+      color: #fff;
+    }
+    .unit-switch button.active {
+      background-color: #3b82f6;
+      color: #fff;
+    }
+    .dark .unit-switch button.active {
+      background-color: #1d4ed8;
+    }
+    .unit-switch button:hover:not(.active) {
+      background-color: #d1d5db;
+    }
+    .dark .unit-switch button:hover:not(.active) {
+      background-color: #4b5563;
+    }
+    .chart-band-select {
+      padding: 0.25rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.25rem;
+      background-color: #fff;
+      color: #000;
+      font-size: 0.875rem;
+    }
+    .dark .chart-band-select {
+      background-color: #333;
+      color: #fff;
+      border-color: #555;
+    }
+    .dark .bg-white {
+      background-color: #000;
+      color: #fff;
+    }
+    :root {
+      --chart-grid-color: #ccc;
+    }
+    .dark {
+      --chart-grid-color: #888;
+    }
+    .frequency-cell {
+      color: inherit !important;
+    }
+    .no-data-image {
+      max-width: 80%;
+      max-height: 12rem;
+      width: auto;
+      height: auto;
+      margin: auto;
+      display: block;
+      object-fit: contain;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 2.5rem;
+      height: 1.25rem;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 1.25rem;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 1rem;
+      width: 1rem;
+      left: 0.125rem;
+      bottom: 0.125rem;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+      background-color: #3b82f6;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(1.25rem);
+    }
+    .dark .toggle-slider {
+      background-color: #555;
+    }
+    .dark input:checked + .toggle-slider {
+      background-color: #1d4ed8;
+    }
+  </style>
+</head>
+<body className="font-sans">
+  <div id="root"></div>
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    const RadioLogApp = () => {
+      const [logs, setLogs] = useState([]);
+      const [frequency, setFrequency] = useState('');
+      const [unit, setUnit] = useState('kHz');
+      const [band, setBand] = useState('');
+      const [stationName, setStationName] = useState('');
+      const [country, setCountry] = useState('');
+      const [signalStrength, setSignalStrength] = useState('');
+      const [hasSSB, setHasSSB] = useState(false);
+      const [hasAM, setHasAM] = useState(false);
+      const [receptionLocation, setReceptionLocation] = useState('');
+      const [notes, setNotes] = useState('');
+      const [sortBy, setSortBy] = useState('date');
+      const [filterBand, setFilterBand] = useState('Todas');
+      const [searchTerm, setSearchTerm] = useState('');
+      const [filterCountry, setFilterCountry] = useState('');
+      const [editIndex, setEditIndex] = useState(null);
+      const [darkMode, setDarkMode] = useState(false);
+      const [currentPage, setCurrentPage] = useState(1);
+      const [chartFilterBand, setChartFilterBand] = useState('Todas');
+      const [chartFilterUnit, setChartFilterUnit] = useState('MHz');
+      const [showExportModal, setShowExportModal] = useState(false);
+      const [notification, setNotification] = useState(null);
+      const [colorCells, setColorCells] = useState(true);
+      const entriesPerPage = 10;
+      const chartRef = useRef(null);
+      const editFormRef = useRef(null);
+
+      const showNotification = (message, type = 'error') => {
+        setNotification({ message, type });
+        setTimeout(() => setNotification(null), 3000);
+      };
+
+      const bandRanges = [
+        { name: 'VLF', min: 3, max: 30 },
+        { name: 'LW', min: 30, max: 300 },
+        { name: 'MW', min: 300, max: 3000 },
+        { name: 'SW', min: 3000, max: 30000 },
+        { name: 'VHF Bajo', min: 30000, max: 87500 },
+        { name: 'FM', min: 87500, max: 108000 },
+        { name: 'Aérea', min: 108000, max: 137000 },
+        { name: 'VHF Alto', min: 137000, max: 300000 },
+        { name: 'UHF', min: 300000, max: 3000000 }
+      ];
+
+      const validBands = bandRanges.map(range => range.name);
+
+      const formatFrequency = (freq) => {
+        const isLowBand = ['VLF', 'LW', 'SW'].includes(
+          bandRanges.find(range => freq >= range.min && freq <= range.max)?.name
+        );
+        if (freq >= 87500 && freq <= 108000) {
+          return `${(freq / 1000).toFixed(2)} MHz`;
+        } else if (freq >= 1000) {
+          return `${(freq / 1000).toFixed(isLowBand ? 3 : 1)} MHz`;
+        }
+        return `${freq.toFixed(isLowBand ? 3 : 0)} kHz`;
+      };
+
+      useEffect(() => {
+        const savedLogs = localStorage.getItem('radioLogs');
+        if (savedLogs) {
+          try {
+            const parsedLogs = JSON.parse(savedLogs);
+            if (validateLogs(parsedLogs)) {
+              setLogs(parsedLogs);
+            } else {
+              localStorage.removeItem('radioLogs');
+              showNotification('Los datos guardados en localStorage no cumplen con el formato esperado. Se han eliminado.');
+            }
+          } catch (error) {
+            localStorage.removeItem('radioLogs');
+            showNotification('Error al cargar datos de localStorage. Se han eliminado.');
+          }
+        }
+      }, []);
+
+      useEffect(() => {
+        localStorage.setItem('radioLogs', JSON.stringify(logs));
+      }, [logs]);
+
+      const validateLogs = (logs) => {
+        if (!Array.isArray(logs)) {
+          return false;
+        }
+        return logs.every((log, index) => {
+          if (typeof log !== 'object' || log === null) {
+            return false;
+          }
+          const hasRequiredFields =
+            typeof log.frequency === 'number' && log.frequency > 0 &&
+            typeof log.band === 'string' && validBands.includes(log.band) &&
+            typeof log.signalStrength === 'number' && log.signalStrength >= 0 && log.signalStrength <= 60 &&
+            typeof log.date === 'string' && log.date.trim() !== '';
+          const hasOptionalFields =
+            (log.stationName === undefined || typeof log.stationName === 'string') &&
+            (log.country === undefined || typeof log.country === 'string') &&
+            (log.hasSSB === undefined || typeof log.hasSSB === 'boolean') &&
+            (log.hasAM === undefined || typeof log.hasAM === 'boolean') &&
+            (log.receptionLocation === undefined || typeof log.receptionLocation === 'string') &&
+            (log.notes === undefined || typeof log.notes === 'string');
+          return hasRequiredFields && hasOptionalFields;
+        });
+      };
+
+      const getValidationErrorMessage = (logs) => {
+        if (!Array.isArray(logs)) {
+          return 'El archivo debe contener un arreglo de objetos. Cada objeto debe incluir: frequency (número >0), band (VLF, LW, MW, SW, VHF Bajo, FM, Aérea, VHF Alto, UHF), signalStrength (número 0-60), date (cadena no vacía). Opcionales: stationName, country, hasSSB, hasAM, receptionLocation, notes.';
+        }
+        for (let i = 0; i < logs.length; i++) {
+          const log = logs[i];
+          if (typeof log !== 'object' || log === null) {
+            return `El registro en la posición ${i + 1} no es un objeto válido.`;
+          }
+          if (typeof log.frequency !== 'number' || log.frequency <= 0) {
+            return `El registro en la posición ${i + 1} tiene una frecuencia inválida (debe ser un número positivo).`;
+          }
+          if (typeof log.band !== 'string' || !validBands.includes(log.band)) {
+            return `El registro en la posición ${i + 1} tiene una banda inválida (debe ser una de: ${validBands.join(', ')}).`;
+          }
+          if (typeof log.signalStrength !== 'number' || log.signalStrength < 0 || log.signalStrength > 60) {
+            return `El registro en la posición ${i + 1} tiene una intensidad de señal inválida (debe estar entre 0 y 60).`;
+          }
+          if (typeof log.date !== 'string' || log.date.trim() === '') {
+            return `El registro en la posición ${i + 1} tiene una fecha inválida (debe ser una cadena no vacía).`;
+          }
+          if (log.stationName !== undefined && typeof log.stationName !== 'string') {
+            return `El registro en la posición ${i + 1} tiene un nombre de emisora inválido (debe ser una cadena).`;
+          }
+          if (log.country !== undefined && typeof log.country !== 'string') {
+            return `El registro en la posición ${i + 1} tiene un país inválido (debe ser una cadena).`;
+          }
+          if (log.hasSSB !== undefined && typeof log.hasSSB !== 'boolean') {
+            return `El registro en la posición ${i + 1} tiene un valor SSB inválido (debe ser un booleano).`;
+          }
+          if (log.hasAM !== undefined && typeof log.hasAM === 'boolean') {
+            return `El registro en la posición ${i + 1} tiene un valor AM inválido (debe ser un booleano).`;
+          }
+          if (log.receptionLocation !== undefined && typeof log.receptionLocation !== 'string') {
+            return `El registro en la posición ${i + 1} tiene un lugar de recepción inválido (debe ser una cadena).`;
+          }
+          if (log.notes !== undefined && typeof log.notes !== 'string') {
+            return `El registro en la posición ${i + 1} tiene notas inválidas (debe ser una cadena).`;
+          }
+        }
+        return '';
+      };
+
+      const convertToKHz = (freqStr, unit) => {
+        if (!freqStr) return 0;
+        const num = parseFloat(freqStr);
+        return isNaN(num) ? 0 : unit === 'MHz' ? num * 1000 : num;
+      };
+
+      useEffect(() => {
+        const freqKHz = convertToKHz(frequency, unit);
+        if (!isNaN(freqKHz) && freqKHz > 0) {
+          const matchedBand = bandRanges.find(range => freqKHz >= range.min && freqKHz <= range.max);
+          setBand(matchedBand ? matchedBand.name : '');
+        } else {
+          setBand('');
+        }
+      }, [frequency, unit]);
+
+      const generateColors = (num) => {
+        const colors = [];
+        for (let i = 0; i < num; i++) {
+          colors.push(`hsl(${(i * 360 / num) % 360}, 70%, 50%)`);
+        }
+        return colors;
+      };
+
+      const filteredLogs = useMemo(() => {
+        return logs
+          .filter(log => filterBand === 'Todas' || log.band === filterBand)
+          .filter(log =>
+            (log.stationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            log.frequency.toString().includes(searchTerm)) &&
+            (!filterCountry || (log.country && log.country.toLowerCase().includes(filterCountry.toLowerCase())))
+          );
+      }, [logs, filterBand, searchTerm, filterCountry]);
+
+      const chartLogs = useMemo(() => {
+        return filteredLogs.filter(log => {
+          const bandMatch = chartFilterBand === 'Todas' || log.band === chartFilterBand;
+          const unitMatch = chartFilterUnit === 'MHz' ? log.frequency >= 1000 : log.frequency < 1000;
+          return bandMatch && unitMatch;
+        });
+      }, [filteredLogs, chartFilterBand, chartFilterUnit]);
+
+      const sortedLogs = useMemo(() => {
+        return [...filteredLogs].sort((a, b) =>
+          sortBy === 'frequency' ? a.frequency - b.frequency : new Date(b.date) - new Date(a.date)
+        );
+      }, [filteredLogs, sortBy]);
+
+      useEffect(() => {
+        if (chartRef.current && typeof chartRef.current.destroy === 'function') {
+          chartRef.current.destroy();
+          chartRef.current = null;
+        }
+
+        if (chartLogs.length > 0) {
+          const canvas = document.getElementById('signalChart');
+          if (!canvas || !canvas.getContext) {
+            console.warn('Canvas element not found or context unavailable. Skipping chart initialization.');
+            return;
+          }
+
+          try {
+            const maxFreq = Math.max(...chartLogs.map(log => log.frequency));
+            const minFreq = Math.min(...chartLogs.map(log => log.frequency));
+            const useMHz = chartFilterUnit === 'MHz';
+            const freqUnit = useMHz ? 1000 : 1;
+            const freqLabel = useMHz ? 'Frecuencia (MHz)' : 'Frecuencia (kHz)';
+            const colors = generateColors(chartLogs.length);
+
+            const ctx = canvas.getContext('2d');
+            chartRef.current = new Chart(ctx, {
+              type: 'scatter',
+              data: {
+                datasets: [{
+                  label: 'Emisoras',
+                  data: chartLogs.map((log, index) => ({
+                    x: log.frequency / freqUnit,
+                    y: log.signalStrength,
+                    stationName: log.stationName || 'Desconocida',
+                    country: log.country || 'Desconocido',
+                    receptionLocation: log.receptionLocation || 'Desconocido',
+                    band: log.band
+                  })),
+                  backgroundColor: colors,
+                  borderColor: colors.map(color => Chart.helpers.color(color).darken(0.2).rgbString()),
+                  pointRadius: 8,
+                  pointHoverRadius: 12
+                }]
+              },
+              options: {
+                scales: {
+                  x: {
+                    type: 'linear',
+                    title: { display: true, text: freqLabel },
+                    min: useMHz ? 0 : Math.max(0, minFreq / freqUnit - 500),
+                    max: maxFreq / freqUnit + (useMHz ? 0.5 : 500),
+                    ticks: { callback: value => `${value.toFixed(useMHz ? 1 : 0)}${useMHz ? ' MHz' : ' kHz'}` },
+                    grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() }
+                  },
+                  y: {
+                    title: { display: true, text: 'Intensidad de Señal (dBµV)' },
+                    min: 0,
+                    max: 70,
+                    grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() }
+                  }
+                },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: context => {
+                        const data = context.raw;
+                        const freq = data.x * freqUnit;
+                        const isLowBand = ['VLF', 'LW', 'SW'].includes(data.band);
+                        return [
+                          `Frecuencia: ${freq >= 1000 ? (freq / 1000).toFixed(1) + ' MHz' : freq.toFixed(isLowBand ? 3 : 0) + ' kHz'}`,
+                          `Banda: ${data.band}`,
+                          `Intensidad: ${data.y} dBµV`,
+                          `Nombre: ${data.stationName}`,
+                          `País: ${data.country}`
+                        ];
+                      }
+                    }
+                  },
+                  title: { display: true, text: 'Intensidad de Señal por Frecuencia' }
+                }
+              }
+            });
+          } catch (error) {
+            console.warn('Failed to initialize chart:', error);
+            chartRef.current = null;
+          }
+        }
+      }, [chartLogs]);
+
+      const addOrUpdateLog = () => {
+        const freqKHz = convertToKHz(frequency, unit);
+        if (!frequency || isNaN(freqKHz) || freqKHz <= 0 || !signalStrength || isNaN(signalStrength) || signalStrength > 60) {
+          showNotification('Por favor, introduce una frecuencia válida (entero o decimal con hasta tres decimales para VLF, LW, SW, VHF Bajo, Aérea, VHF Alto, UHF; hasta dos para MW, FM; como 123, 123.45 o 123.456) y una intensidad de señal entre 0 y 60 dBµV.');
+          return;
+        }
+        const matchedBand = bandRanges.find(range => freqKHz >= range.min && freqKHz <= range.max);
+        if (!matchedBand) {
+          showNotification('La frecuencia ingresada no corresponde a ninguna banda válida.');
+          return;
+        }
+        const decimalPlaces = frequency.includes('.') ? frequency.split('.')[1].length : 0;
+        if (decimalPlaces > 3) {
+          showNotification('La frecuencia no puede tener más de tres decimales (ej. 123.456).');
+          return;
+        }
+        if (['MW', 'FM'].includes(matchedBand.name) && decimalPlaces > 2) {
+          showNotification('Las bandas MW y FM solo permiten hasta dos decimales (ej. 1530 o 98.35).');
+          return;
+        }
+        if (notes.length > 150) {
+          showNotification('Las notas no pueden exceder los 150 caracteres.');
+          return;
+        }
+
+        const newLog = {
+          frequency: freqKHz,
+          band: matchedBand.name,
+          stationName,
+          country,
+          signalStrength: parseFloat(signalStrength),
+          hasSSB,
+          hasAM,
+          receptionLocation,
+          date: editIndex !== null ? logs[editIndex].date : new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
+          notes
+        };
+
+        if (editIndex !== null) {
+          const updatedLogs = [...logs];
+          updatedLogs[editIndex] = newLog;
+          setLogs(updatedLogs);
+          setEditIndex(null);
+        } else {
+          setLogs([...logs, newLog]);
+        }
+
+        setFrequency('');
+        setUnit('kHz');
+        setBand('');
+        setStationName('');
+        setCountry('');
+        setSignalStrength('');
+        setHasSSB(false);
+        setHasAM(false);
+        setReceptionLocation('');
+        setNotes('');
+      };
+
+      const editLog = (index) => {
+        const log = logs[index];
+        const freq = log.frequency;
+        let displayFreq, displayUnit;
+        if (freq >= 87500 && freq <= 108000) {
+          displayFreq = (freq / 1000).toString();
+          displayUnit = 'MHz';
+        } else {
+          displayFreq = freq.toString();
+          displayUnit = 'kHz';
+        }
+        setFrequency(displayFreq);
+        setUnit(displayUnit);
+        setBand(log.band);
+        setStationName(log.stationName);
+        setCountry(log.country);
+        setSignalStrength(log.signalStrength);
+        setHasSSB(log.hasSSB || false);
+        setHasAM(log.hasAM || false);
+        setReceptionLocation(log.receptionLocation);
+        setNotes(log.notes);
+        setEditIndex(index);
+        if (editFormRef.current) editFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
+      const cancelEdit = () => {
+        setEditIndex(null);
+        setFrequency('');
+        setUnit('kHz');
+        setBand('');
+        setStationName('');
+        setCountry('');
+        setSignalStrength('');
+        setHasSSB(false);
+        setHasAM(false);
+        setReceptionLocation('');
+        setNotes('');
+      };
+
+      const deleteLog = (index) => {
+        const newLogs = logs.filter((_, i) => i !== index);
+        setLogs(newLogs);
+        const filteredNewLogs = newLogs
+          .filter(log => filterBand === 'Todas' || log.band === filterBand)
+          .filter(log =>
+            (log.stationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            log.frequency.toString().includes(searchTerm)) &&
+            (!filterCountry || (log.country && log.country.toLowerCase().includes(filterCountry.toLowerCase())))
+          );
+        const totalPages = Math.ceil(filteredNewLogs.length / entriesPerPage);
+        if (currentPage > totalPages && totalPages > 0) {
+          setCurrentPage(totalPages);
+        } else if (totalPages === 0) {
+          setCurrentPage(1);
+        }
+      };
+
+      const exportData = (format) => {
+        setShowExportModal(false);
+        const formattedLogs = logs.map(log => ({
+          ...log,
+          frequency: formatFrequency(log.frequency)
+        }));
+        if (format === 'json') {
+          const dataStr = JSON.stringify(formattedLogs, null, 2);
+          const blob = new Blob([dataStr], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `radio_logs_${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } else if (format === 'xlsx') {
+          const worksheet = XLSX.utils.json_to_sheet(formattedLogs);
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, 'Radio Logs');
+          XLSX.writeFile(workbook, `radio_logs_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+      };
+
+      const loadData = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const fileType = file.name.split('.').pop().toLowerCase();
+        const reader = new FileReader();
+
+        if (fileType === 'json') {
+          reader.onload = (e) => {
+            try {
+              const importedLogs = JSON.parse(e.target.result);
+              const convertedLogs = importedLogs.map(log => ({
+                ...log,
+                frequency: typeof log.frequency === 'string' ? convertToKHz(log.frequency.replace(/[^0-9.]/g, ''), log.frequency.includes('MHz') ? 'MHz' : 'kHz') : log.frequency,
+                stationName: window.DOMPurify.sanitize(log.stationName || ''),
+                country: window.DOMPurify.sanitize(log.country || ''),
+                receptionLocation: window.DOMPurify.sanitize(log.receptionLocation || ''),
+                notes: window.DOMPurify.sanitize(log.notes || '')
+              }));
+              if (validateLogs(convertedLogs)) {
+                setLogs(convertedLogs);
+                localStorage.setItem('radioLogs', JSON.stringify(convertedLogs));
+                setCurrentPage(1);
+                showNotification('Datos JSON cargados con éxito.', 'success');
+              } else {
+                showNotification(`Error al cargar el archivo JSON: ${getValidationErrorMessage(convertedLogs)}`);
+              }
+            } catch (error) {
+              showNotification('Error al cargar el archivo JSON. Asegúrate de que sea un archivo JSON válido.');
+            }
+          };
+          reader.readAsText(file);
+        } else if (fileType === 'xlsx') {
+          reader.onload = (e) => {
+            try {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const sheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[sheetName];
+              const importedLogs = XLSX.utils.sheet_to_json(worksheet);
+
+              const convertedLogs = importedLogs.map(row => ({
+                frequency: typeof row.frequency === 'string' ? convertToKHz(row.frequency.replace(/[^0-9.]/g, ''), row.frequency.includes('MHz') ? 'MHz' : 'kHz') : parseFloat(row.frequency),
+                band: row.band,
+                stationName: window.DOMPurify.sanitize(row.stationName || ''),
+                country: window.DOMPurify.sanitize(row.country || ''),
+                signalStrength: parseFloat(row.signalStrength),
+                hasSSB: row.hasAM === true || row.hasAM === 'true' || row.hasAM === 1,
+                hasAM: row.hasAM === true || row.hasAM === 'true' || row.hasAM === 1,
+                receptionLocation: window.DOMPurify.sanitize(row.receptionLocation || ''),
+                date: row.date,
+                notes: window.DOMPurify.sanitize(row.notes || '')
+              }));
+
+              if (validateLogs(convertedLogs)) {
+                setLogs(convertedLogs);
+                localStorage.setItem('radioLogs', JSON.stringify(convertedLogs));
+                setCurrentPage(1);
+                showNotification('Datos XLSX cargados con éxito.', 'success');
+              } else {
+                showNotification(`Error al cargar el archivo XLSX: ${getValidationErrorMessage(convertedLogs)}`);
+              }
+            } catch (error) {
+              showNotification('Error al cargar el archivo XLSX. Asegúrate de que sea un archivo XLSX válido.');
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          showNotification('Formato de archivo no soportado. Por favor, carga un archivo JSON o XLSX.');
+        }
+      };
+
+      const getStats = () => {
+        const totalLogs = logs.length;
+        const bandsCount = {
+          VLF: logs.filter(log => log.band === 'VLF').length,
+          LW: logs.filter(log => log.band === 'LW').length,
+          MW: logs.filter(log => log.band === 'MW').length,
+          SW: logs.filter(log => log.band === 'SW').length,
+          'VHF Bajo': logs.filter(log => log.band === 'VHF Bajo').length,
+          FM: logs.filter(log => log.band === 'FM').length,
+          Aérea: logs.filter(log => log.band === 'Aérea').length,
+          'VHF Alto': logs.filter(log => log.band === 'VHF Alto').length,
+          UHF: logs.filter(log => log.band === 'UHF').length
+        };
+        const highestSignal = logs.reduce((max, log) => Math.max(max, log.signalStrength), 0);
+        const highestSignalStation = logs.find(log => log.signalStrength === highestSignal);
+
+        return {
+          totalLogs,
+          bandsCount,
+          highestSignal: highestSignalStation ? `${highestSignal} dBµV (${highestSignalStation.stationName || 'Desconocida'})` : 'N/A'
+        };
+      };
+
+      const stats = getStats();
+
+      const totalPages = Math.ceil(sortedLogs.length / entriesPerPage);
+      const startIndex = (currentPage - 1) * entriesPerPage;
+      const endIndex = startIndex + entriesPerPage;
+      const paginatedLogs = sortedLogs.slice(startIndex, endIndex);
+
+      const cellColors = generateColors(paginatedLogs.length);
+
+      const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+          setCurrentPage(page);
+        }
+      };
+
+      return (
+        <div className={`max-w-6xl mx-auto p-4 flex flex-col min-h-screen ${darkMode ? 'dark' : ''}`}>
+          {notification && (
+            <div className={`p-4 rounded mb-4 ${notification.type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white text-center`}>
+              {notification.message}
+            </div>
+          )}
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-white military-title">REGISTRO DE EMISORAS</h1>
+            <h2 className="text-lg text-white mt-2 military-title">ECHO CHARLIE PAD</h2>
+            <img
+              src="https://i.ibb.co/k2wjXpWx/pngegg.png"
+              alt="Logo de ondas"
+              className="max-w-xs mx-auto mt-4"
+              width="150"
+              height="100"
+            />
+          </div>
+          <div ref={editFormRef} className={`bg-white p-6 rounded-lg mb-6 add-edit-container ${darkMode ? 'dark' : ''}`}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">{editIndex !== null ? 'Editar Emisora' : 'Añadir Nueva Emisora'}</h2>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className={`px-2 py-1 rounded ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`}
+                aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              >
+                {darkMode ? 'Light Mode' : 'Dark Mode'}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="frequency-input">Frecuencia</label>
+                <div className="frequency-container">
+                  <input
+                    type="text"
+                    pattern="^[0-9]+(\.[0-9]{1,3})?$"
+                    value={frequency}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(',', '.').replace(/\s*(kHz|MHz)?$/i, '');
+                      setFrequency(value);
+                    }}
+                    className="mt-1 p-2 border rounded w-2/3"
+                    placeholder="Ej: 98.3 o 1530"
+                    title="Ingrese un número entero o decimal con hasta tres decimales para VLF, LW, SW, VHF Bajo, Aérea, VHF Alto, UHF (ej. 123.456); hasta dos para MW, FM (ej. 98.35)"
+                    id="frequency-input"
+                    aria-describedby="frequency-description"
+                  />
+                  <select
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                    className="mt-1 p-2 border rounded w-1/3"
+                    aria-label="Seleccionar unidad de frecuencia"
+                  >
+                    <option value="kHz">kHz</option>
+                    <option value="MHz">MHz</option>
+                  </select>
+                </div>
+                <span id="frequency-description" className="sr-only">
+                  Ingrese la frecuencia en kHz o MHz, por ejemplo, 98.3 o 1530
+                </span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="band-input">Banda</label>
+                <input
+                  type="text"
+                  value={band}
+                  readOnly
+                  className="mt-1 p-2 border rounded w-full bg-gray-100 cursor-not-allowed"
+                  id="band-input"
+                  aria-label="Banda de frecuencia (solo lectura)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="station-name-input">Nombre de la Emisora</label>
+                <input
+                  type="text"
+                  value={stationName}
+                  onChange={(e) => setStationName(e.target.value)}
+                  maxLength={50}
+                  className="mt-1 p-2 border rounded w-full"
+                  placeholder="Ej: Radio Havana (máx. 50 caracteres)"
+                  id="station-name-input"
+                  aria-describedby="station-name-description"
+                />
+                <span id="station-name-description" className="sr-only">
+                  Nombre de la emisora, máximo 50 caracteres, por ejemplo, Radio Havana
+                </span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="country-input">País</label>
+                <input
+                  type="text"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="mt-1 p-2 border rounded w-full"
+                  placeholder="Ej: Cuba"
+                  id="country-input"
+                  aria-describedby="country-description"
+                />
+                <span id="country-description" className="sr-only">
+                  País de origen de la emisora, por ejemplo, Cuba
+                </span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="signal-strength-input">Intensidad de Señal (dBµV)</label>
+                <div className="signal-strength-container">
+                  <input
+                    type="number"
+                    value={signalStrength}
+                    onChange={(e) => {
+                      const value = Math.min(60, Math.max(0, parseFloat(e.target.value) || 0));
+                      setSignalStrength(value);
+                    }}
+                    max={60}
+                    min={0}
+                    className="mt-1 p-2 border rounded w-full signal-strength-input"
+                    placeholder="Ej: 45 (máx. 60)"
+                    id="signal-strength-input"
+                    aria-describedby="signal-strength-description"
+                  />
+                  <div className="modulation-container">
+                    <div className="ssb-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={hasSSB}
+                        onChange={(e) => setHasSSB(e.target.checked)}
+                        className="mt-1"
+                        id="ssb-checkbox"
+                        aria-label="Habilitar modulación SSB"
+                      />
+                      <label className="text-sm font-medium text-gray-700" htmlFor="ssb-checkbox">SSB</label>
+                    </div>
+                    <div className="ssb-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={hasAM}
+                        onChange={(e) => setHasAM(e.target.checked)}
+                        className="mt-1"
+                        id="am-checkbox"
+                        aria-label="Habilitar modulación AM"
+                      />
+                      <label className="text-sm font-medium text-gray-700" htmlFor="am-checkbox">AM</label>
+                    </div>
+                  </div>
+                </div>
+                <span id="signal-strength-description" className="sr-only">
+                  Intensidad de señal en decibelios microvoltios, entre 0 y 60, por ejemplo, 45
+                </span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="reception-location-input">Lugar de Recepción</label>
+                <input
+                  type="text"
+                  value={receptionLocation}
+                  onChange={(e) => setReceptionLocation(e.target.value)}
+                  className="mt-1 p-2 border rounded w-full"
+                  placeholder="Ej: Balcony, Madrid"
+                  id="reception-location-input"
+                  aria-describedby="reception-location-description"
+                />
+                <span id="reception-location-description" className="sr-only">
+                  Lugar donde se recibió la señal, por ejemplo, Balcony, Madrid
+                </span>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700" htmlFor="notes-input">Notas</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value.slice(0, 150))}
+                  className="mt-1 p-2 border rounded w-full"
+                  placeholder="Ej: Señal clara, idioma español (máx. 150 caracteres)"
+                  maxLength={150}
+                  id="notes-input"
+                  aria-describedby="notes-description"
+                />
+                <span id="notes-description" className="sr-only">
+                  Notas sobre la recepción, máximo 150 caracteres, por ejemplo, Señal clara, idioma español
+                </span>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={addOrUpdateLog}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                aria-label={editIndex !== null ? 'Actualizar emisora existente' : 'Añadir nueva emisora'}
+              >
+                {editIndex !== null ? 'Actualizar' : 'Añadir Emisora'}
+              </button>
+              {editIndex !== null && (
+                <button
+                  onClick={cancelEdit}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                  aria-label="Cancelar edición de emisora"
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="p-6 rounded-lg mb-6 mx-auto w-full max-w-6xl">
+            <div className="stats-grid">
+              <div className="p-4 rounded-lg bg-green-400 stats-card">
+                <h3 className="text-lg font-medium">Total de Emisoras</h3>
+                <p className="text-2xl font-bold">{stats.totalLogs}</p>
+              </div>
+              <div className="p-4 rounded-lg bg-green-600 stats-card">
+                <h3 className="text-lg font-medium">Emisoras por Banda</h3>
+                <div className="band-count-grid mt-2">
+                  <div>VLF: {stats.bandsCount.VLF}</div>
+                  <div>LW: {stats.bandsCount.LW}</div>
+                  <div>MW: {stats.bandsCount.MW}</div>
+                  <div>SW: {stats.bandsCount.SW}</div>
+                  <div>VHF Bajo: {stats.bandsCount['VHF Bajo']}</div>
+                  <div>FM: {stats.bandsCount.FM}</div>
+                  <div>Aérea: {stats.bandsCount.Aérea}</div>
+                  <div>VHF Alto: {stats.bandsCount['VHF Alto']}</div>
+                  <div>UHF: {stats.bandsCount.UHF}</div>
+                </div>
+              </div>
+              <div className="p-4 rounded-lg bg-green-800 stats-card">
+                <h2 className="text-lg font-medium">Señal Más Alta</h2>
+                <p className="text-sm">{stats.highestSignal}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`bg-white p-6 rounded-lg shadow-md mb-6 captured-container ${darkMode ? 'dark' : ''}`}>
+            <h2 className="text-xl font-semibold mb-4">Emisoras Captadas</h2>
+            <div className="mb-4 flex flex-wrap gap-4">
+              <div>
+                <label className="mr-2" htmlFor="filter-band-select">Filtrar por banda:</label>
+                <select
+                  value={filterBand}
+                  onChange={(e) => { setFilterBand(e.target.value); setCurrentPage(1); }}
+                  className="p-2 border rounded"
+                  id="filter-band-select"
+                  aria-label="Filtrar emisoras por banda"
+                >
+                  <option value="Todas">Todas</option>
+                  <option value="VLF">VLF</option>
+                  <option value="LW">LW</option>
+                  <option value="MW">MW</option>
+                  <option value="SW">SW</option>
+                  <option value="VHF Bajo">VHF Bajo</option>
+                  <option value="FM">FM</option>
+                  <option value="Aérea">Aérea</option>
+                  <option value="VHF Alto">VHF Alto</option>
+                  <option value="UHF">UHF</option>
+                </select>
+              </div>
+              <div>
+                <label className="mr-2" htmlFor="search-input">Buscar:</label>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                  className="p-2 border rounded"
+                  placeholder="Nombre o frecuencia..."
+                  id="search-input"
+                  aria-describedby="search-description"
+                />
+                <span id="search-description" className="sr-only">
+                  Buscar emisoras por nombre o frecuencia
+                </span>
+              </div>
+              <div>
+                <label className="mr-2" htmlFor="filter-country-input">Filtrar por país:</label>
+                <input
+                  type="text"
+                  value={filterCountry}
+                  onChange={(e) => { setFilterCountry(e.target.value); setCurrentPage(1); }}
+                  className="p-2 border rounded"
+                  placeholder="Ej: Cuba"
+                  id="filter-country-input"
+                  aria-describedby="filter-country-description"
+                />
+                <span id="filter-country-description" className="sr-only">
+                  Filtrar emisoras por país, por ejemplo, Cuba
+                </span>
+              </div>
+              <div>
+                <label className="mr-2" htmlFor="sort-select">Ordenar por:</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
+                  className="p-2 border rounded"
+                  id="sort-select"
+                  aria-label="Ordenar emisoras"
+                >
+                  <option value="date">Fecha</option>
+                  <option value="frequency">Frecuencia</option>
+                </select>
+              </div>
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 export-load-btn"
+                aria-label="Exportar datos de emisoras"
+              >
+                Exportar Datos
+              </button>
+              <div className="flex items-center gap-2">
+                <label
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer load-data-btn export-load-btn"
+                  htmlFor="load-data-input"
+                >
+                  Cargar Datos
+                  <input
+                    type="file"
+                    accept=".json,.xlsx"
+                    onChange={loadData}
+                    className="hidden"
+                    id="load-data-input"
+                    aria-label="Cargar archivo de datos de emisoras en formato JSON o XLSX"
+                  />
+                </label>
+                <div className="flex items-center gap-1">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={colorCells}
+                      onChange={() => setColorCells(!colorCells)}
+                      aria-label="Activar o desactivar colores de celdas de frecuencia"
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            {showExportModal && (
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Seleccionar formato de exportación"
+                tabIndex={-1}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setShowExportModal(false);
+                }}
+              >
+                <div className={`bg-white p-6 rounded-lg ${darkMode ? 'dark' : ''}`}>
+                  <h3 className="text-lg font-semibold mb-4" style={darkMode ? { color: '#fff' } : { color: '#000' }}>
+                    Elija formato de salida
+                  </h3>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => exportData('json')}
+                      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      aria-label="Exportar datos como archivo JSON"
+                    >
+                      Exportar como JSON
+                    </button>
+                    <button
+                      onClick={() => exportData('xlsx')}
+                      className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                      aria-label="Exportar datos como archivo XLSX"
+                    >
+                      Exportar como XLSX
+                    </button>
+                    <button
+                      onClick={() => setShowExportModal(false)}
+                      className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                      aria-label="Cancelar exportación"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {paginatedLogs.length === 0 ? (
+              <p className="text-gray-500">No hay emisoras que coincidan con el filtro o búsqueda.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className={`min-w-full border-collapse ${darkMode ? 'dark' : ''}`}>
+                  <thead>
+                    <tr className="bg-gray-200">
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>Frecuencia</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>Banda</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>Nombre</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>País</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>Señal (dBµV)</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>SSB</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>AM</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>Lugar de Recepción</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center notes-cell`}>Notas</th>
+                      <th className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedLogs.map((log, index) => (
+                      <tr key={index} className={`${darkMode ? '' : 'hover:bg-gray-100'}`}>
+                        <td 
+                          className={`p-2 border ${darkMode ? 'dark' : ''} text-center frequency-cell`} 
+                          style={{ backgroundColor: colorCells ? cellColors[index] : (darkMode ? '#000' : '#fff') }}
+                        >
+                          {formatFrequency(log.frequency)}
+                        </td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.band}</td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.stationName || '-'}</td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.country || '-'}</td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.signalStrength}</td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.hasSSB ? 'Sí' : 'No'}</td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.hasAM ? 'Sí' : 'No'}</td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.receptionLocation || '-'}</td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center notes-cell`} title={log.notes || ''}>
+                          <span className="notes-content">{log.notes || '-'}</span>
+                          {log.notes && (
+                            <div
+                              className="notes-tooltip"
+                              dangerouslySetInnerHTML={{ __html: window.DOMPurify.sanitize(log.notes) }}
+                            />
+                          )}
+                        </td>
+                        <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center action-cell`}>
+                          <button
+                            onClick={() => editLog(logs.indexOf(log))}
+                            className="bg-blue-500 text-white rounded hover:bg-blue-600 action-btn"
+                            aria-label={`Editar emisora ${log.stationName || 'sin nombre'} con frecuencia ${formatFrequency(log.frequency)}`}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              className="w-4 h-4"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => deleteLog(logs.indexOf(log))}
+                            className="bg-red-500 text-white rounded hover:bg-red-600 action-btn"
+                            aria-label={`Eliminar emisora ${log.stationName || 'sin nombre'} con frecuencia ${formatFrequency(log.frequency)}`}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              className="w-4 h-4"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0h4m-7 4v12m10-12v12"
+                              />
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {totalPages > 1 && (
+                  <div className="paginator">
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      aria-label="Ir a la página anterior"
+                      aria-disabled={currentPage === 1 ? 'true' : 'false'}
+                    >
+                      «
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={currentPage === page ? 'active' : ''}
+                        aria-label={`Ir a la página ${page}`}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      aria-label="Ir a la página siguiente"
+                      aria-disabled={currentPage === totalPages ? 'true' : 'false'}
+                    >
+                      »
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {logs.length > 0 && (
+            <div className={`bg-white p-6 rounded-lg shadow-md mt-6 mb-6 chart-container ${darkMode ? 'dark' : ''}`}>
+              <h2 className="text-xl font-semibold mb-4">Gráfico de Intensidad de Señal</h2>
+              <div className="chart-filter-container">
+                <div>
+                  <label className="mr-2" htmlFor="chart-band-select">Banda:</label>
+                  <select
+                    value={chartFilterBand}
+                    onChange={(e) => setChartFilterBand(e.target.value)}
+                    className="chart-band-select"
+                    id="chart-band-select"
+                    aria-label="Filtrar gráfico por banda"
+                  >
+                    <option value="Todas">Todas</option>
+                    <option value="VLF">VLF</option>
+                    <option value="LW">LW</option>
+                    <option value="MW">MW</option>
+                    <option value="SW">SW</option>
+                    <option value="VHF Bajo">VHF Bajo</option>
+                    <option value="FM">FM</option>
+                    <option value="Aérea">Aérea</option>
+                    <option value="VHF Alto">VHF Alto</option>
+                    <option value="UHF">UHF</option>
+                  </select>
+                </div>
+                <div className="unit-switch">
+                  {['MHz', 'kHz'].map(unitOption => (
+                    <button
+                      key={unitOption}
+                      onClick={() => setChartFilterUnit(unitOption)}
+                      className={chartFilterUnit === unitOption ? 'active' : ''}
+                      aria-label={`Filtrar gráfico por unidad ${unitOption}`}
+                      aria-pressed={chartFilterUnit === unitOption}
+                    >
+                      {unitOption}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {chartLogs.length > 0 ? (
+                <>
+                  <div className="sr-only" aria-live="polite">
+                    Gráfico de dispersión mostrando {chartLogs.length} emisoras con intensidad de señal entre 0 y 60 dBµV y frecuencias entre {chartLogs.length ? Math.min(...chartLogs.map(log => log.frequency)) : 0} y {chartLogs.length ? Math.max(...chartLogs.map(log => log.frequency)) : 0} kHz.
+                  </div>
+                  <canvas
+                    id="signalChart"
+                    className="w-full h-64"
+                    aria-label="Gráfico de dispersión de intensidad de señal por frecuencia"
+                    role="img"
+                  />
+                </>
+              ) : (
+                <img
+                  src={darkMode ? 'https://i.ibb.co/0pRS8304/nothinginverted.webp' : 'https://i.ibb.co/d4WjM9NT/nothing.webp'}
+                  alt="No hay datos para mostrar en el gráfico"
+                  className="no-data-image"
+                />
+              )}
+            </div>
+          )}
+          <footer className="mt-auto mt-6">
+            <div className="footer-container">
+              <a
+                href="https://github.com/aisurf3r/EchoCharlie-Pad"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Visitar el repositorio de Echo Charlie Pad en GitHub"
+              >
+                <img
+                  src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                  alt="GitHub Logo"
+                  className="inline-block"
+                />
+              </a>
+              <span>Echo Charlie Pad - Registro de Emisoras by Aisurf3r © 2025</span>
+            </div>
+          </footer>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<RadioLogApp />);
+  </script>
+</body>
+</html>
