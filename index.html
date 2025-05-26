@@ -165,7 +165,7 @@
       padding: 1rem;
       background-color: #fff;
       color: #000;
-      transition: background-color 0.3s ease, color 0.3s easeRedo Changes
+      transition: background-color 0.3s ease, color 0.3s ease;
       border-radius: 0.5rem;
     }
     .dark .footer-container {
@@ -578,10 +578,7 @@
             const useMHz = chartFilterUnit === 'MHz';
             const freqUnit = useMHz ? 1000 : 1;
             const freqLabel = useMHz ? 'Frecuencia (MHz)' : 'Frecuencia (kHz)';
-            // Generate colors for all logs to ensure consistency
-            const allColors = generateColors(logs.length);
-            // Map colors to chartLogs based on their index in the original logs array
-            const chartColors = chartLogs.map(log => allColors[logs.indexOf(log)]);
+            const colors = generateColors(chartLogs.length);
 
             const ctx = canvas.getContext('2d');
             chartRef.current = new Chart(ctx, {
@@ -597,8 +594,8 @@
                     receptionLocation: log.receptionLocation || 'Desconocido',
                     band: log.band
                   })),
-                  backgroundColor: chartColors,
-                  borderColor: chartColors.map(color => Chart.helpers.color(color).darken(0.2).rgbString()),
+                  backgroundColor: colors,
+                  borderColor: colors.map(color => Chart.helpers.color(color).darken(0.2).rgbString()),
                   pointRadius: 8,
                   pointHoverRadius: 12
                 }]
@@ -647,7 +644,7 @@
             chartRef.current = null;
           }
         }
-      }, [chartLogs, logs]);
+      }, [chartLogs]);
 
       const addOrUpdateLog = () => {
         const freqKHz = convertToKHz(frequency, unit);
@@ -1110,7 +1107,7 @@
                 <div className="band-count-grid mt-2">
                   <div>VLF: {stats.bandsCount.VLF}</div>
                   <div>LW: {stats.bandsCount.LW}</div>
-                  <div> MW: {stats.bandsCount.MW}</div>
+                  <div>MW: {stats.bandsCount.MW}</div>
                   <div>SW: {stats.bandsCount.SW}</div>
                   <div>VHF Bajo: {stats.bandsCount['VHF Bajo']}</div>
                   <div>FM: {stats.bandsCount.FM}</div>
