@@ -184,11 +184,23 @@
       text-align: center;
     }
     .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       gap: 2.5rem;
       width: 100%;
       max-width: 72rem;
+    }
+    .stats-grid > div {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+    @media (min-width: 640px) {
+      .stats-grid {
+        flex-wrap: nowrap;
+      }
+      .stats-grid > div {
+        flex: 1 1 0;
+      }
     }
     .paginator {
       display: flex;
@@ -383,7 +395,7 @@
       const [darkMode, setDarkMode] = useState(false);
       const [currentPage, setCurrentPage] = useState(1);
       const [chartFilterBand, setChartFilterBand] = useState('Todas');
-      const [chartFilterUnit, setChartFilterUnit] = useState('MHz');
+      const [chartFilterUnit, setChartFilterUnit] = useState('kHz');
       const [showExportModal, setShowExportModal] = useState(false);
       const [notification, setNotification] = useState(null);
       const [colorCells, setColorCells] = useState(true);
@@ -410,16 +422,10 @@
 
       const validBands = bandRanges.map(range => range.name);
 
-      const formatFrequency = (freq) => {
-        const isLowBand = ['VLF', 'LW', 'SW'].includes(
-          bandRanges.find(range => freq >= range.min && freq <= range.max)?.name
-        );
-        if (freq >= 87500 && freq <= 108000) {
-          return `${(freq / 1000).toFixed(2)} MHz`;
-        } else if (freq >= 1000) {
-          return `${(freq / 1000).toFixed(isLowBand ? 3 : 1)} MHz`;
-        }
-        return `${freq.toFixed(isLowBand ? 3 : 0)} kHz`;
+      const formatFrequency = (freq, inputUnit) => {
+        const num = parseFloat(freq);
+        if (isNaN(num)) return 'N/A';
+        return `${freq} ${inputUnit}`;
       };
 
       useEffect(() => {
@@ -453,7 +459,8 @@
             return false;
           }
           const hasRequiredFields =
-            typeof log.frequency === 'number' && log.frequency > 0 &&
+            typeof log.frequency === 'string' && parseFloat(log.frequency) > 0 &&
+            typeof log.unit === 'string' && ['kHz', 'MHz'].includes(log.unit) &&
             typeof log.band === 'string' && validBands.includes(log.band) &&
             typeof log.signalStrength === 'number' && log.signalStrength >= 0 && log.signalStrength <= 60 &&
             typeof log.date === 'string' && log.date.trim() !== '';
@@ -470,15 +477,18 @@
 
       const getValidationErrorMessage = (logs) => {
         if (!Array.isArray(logs)) {
-          return 'El archivo debe contener un arreglo de objetos. Cada objeto debe incluir: frequency (número >0), band (VLF, LW, MW, SW, VHF Bajo, FM, Aérea, VHF Alto, UHF), signalStrength (número 0-60), date (cadena no vacía). Opcionales: stationName, country, hasSSB, hasAM, receptionLocation, notes.';
+          return 'El archivo debe contener un arreglo de objetos. Cada objeto debe incluir: frequency (cadena numérica >0), unit (kHz o MHz), band (VLF, LW, MW, SW, VHF Bajo, FM, Aérea, VHF Alto, UHF), signalStrength (número 0-60), date (cadena no vacía). Opcionales: stationName, country, hasSSB, hasAM, receptionLocation, notes.';
         }
         for (let i = 0; i < logs.length; i++) {
           const log = logs[i];
           if (typeof log !== 'object' || log === null) {
             return `El registro en la posición ${i + 1} no es un objeto válido.`;
           }
-          if (typeof log.frequency !== 'number' || log.frequency <= 0) {
-            return `El registro en la posición ${i + 1} tiene una frecuencia inválida (debe ser un número positivo).`;
+          if (typeof log.frequency !== 'string' || parseFloat(log.frequency) <= 0) {
+            return `El registro en la posición ${i + 1} tiene una frecuencia inválida (debe ser una cadena numérica positiva).`;
+          }
+          if (typeof log.unit !== 'string' || !['kHz', 'MHz'].includes(log.unit)) {
+            return `El registro en la posición ${i + 1} tiene una unidad inválida (debe ser kHz o MHz).`;
           }
           if (typeof log.band !== 'string' || !validBands.includes(log.band)) {
             return `El registro en la posición ${i + 1} tiene una banda inválida (debe ser una de: ${validBands.join(', ')}).`;
@@ -498,7 +508,7 @@
           if (log.hasSSB !== undefined && typeof log.hasSSB !== 'boolean') {
             return `El registro en la posición ${i + 1} tiene un valor SSB inválido (debe ser un booleano).`;
           }
-          if (log.hasAM !== undefined && typeof log.hasAM === 'boolean') {
+          if (log.hasAM !== undefined && typeof log.hasAM !== 'boolean') {
             return `El registro en la posición ${i + 1} tiene un valor AM inválido (debe ser un booleano).`;
           }
           if (log.receptionLocation !== undefined && typeof log.receptionLocation !== 'string') {
@@ -548,14 +558,14 @@
       const chartLogs = useMemo(() => {
         return filteredLogs.filter(log => {
           const bandMatch = chartFilterBand === 'Todas' || log.band === chartFilterBand;
-          const unitMatch = chartFilterUnit === 'MHz' ? log.frequency >= 1000 : log.frequency < 1000;
+          const unitMatch = chartFilterUnit === log.unit;
           return bandMatch && unitMatch;
         });
       }, [filteredLogs, chartFilterBand, chartFilterUnit]);
 
       const sortedLogs = useMemo(() => {
         return [...filteredLogs].sort((a, b) =>
-          sortBy === 'frequency' ? a.frequency - b.frequency : new Date(b.date) - new Date(a.date)
+          sortBy === 'frequency' ? parseFloat(a.frequency) - parseFloat(b.frequency) : new Date(b.date) - new Date(a.date)
         );
       }, [filteredLogs, sortBy]);
 
@@ -573,12 +583,12 @@
           }
 
           try {
-            const maxFreq = Math.max(...chartLogs.map(log => log.frequency));
-            const minFreq = Math.min(...chartLogs.map(log => log.frequency));
-            const useMHz = chartFilterUnit === 'MHz';
-            const freqUnit = useMHz ? 1000 : 1;
-            const freqLabel = useMHz ? 'Frecuencia (MHz)' : 'Frecuencia (kHz)';
-            const colors = generateColors(chartLogs.length);
+            const maxFreq = Math.max(...chartLogs.map(log => parseFloat(log.frequency)));
+            const minFreq = Math.min(...chartLogs.map(log => parseFloat(log.frequency)));
+            const freqUnit = chartFilterUnit;
+            const freqLabel = `Frecuencia (${freqUnit})`;
+            const allColors = generateColors(logs.length);
+            const chartColors = chartLogs.map(log => allColors[logs.indexOf(log)]);
 
             const ctx = canvas.getContext('2d');
             chartRef.current = new Chart(ctx, {
@@ -587,15 +597,16 @@
                 datasets: [{
                   label: 'Emisoras',
                   data: chartLogs.map((log, index) => ({
-                    x: log.frequency / freqUnit,
+                    x: log.frequency, // Store as string to preserve decimals
                     y: log.signalStrength,
                     stationName: log.stationName || 'Desconocida',
                     country: log.country || 'Desconocido',
                     receptionLocation: log.receptionLocation || 'Desconocido',
-                    band: log.band
+                    band: log.band,
+                    unit: log.unit
                   })),
-                  backgroundColor: colors,
-                  borderColor: colors.map(color => Chart.helpers.color(color).darken(0.2).rgbString()),
+                  backgroundColor: chartColors,
+                  borderColor: chartColors.map(color => Chart.helpers.color(color).darken(0.2).rgbString()),
                   pointRadius: 8,
                   pointHoverRadius: 12
                 }]
@@ -605,9 +616,15 @@
                   x: {
                     type: 'linear',
                     title: { display: true, text: freqLabel },
-                    min: useMHz ? 0 : Math.max(0, minFreq / freqUnit - 500),
-                    max: maxFreq / freqUnit + (useMHz ? 0.5 : 500),
-                    ticks: { callback: value => `${value.toFixed(useMHz ? 1 : 0)}${useMHz ? ' MHz' : ' kHz'}` },
+                    min: Math.max(0, minFreq - (freqUnit === 'MHz' ? 0.1 : 100)),
+                    max: maxFreq + (freqUnit === 'MHz' ? 0.1 : 100),
+                    ticks: {
+                      callback: function(value) {
+                        // Format tick to match stored frequency string
+                        const log = chartLogs.find(log => parseFloat(log.frequency) === value);
+                        return log ? `${log.frequency} ${freqUnit}` : `${value} ${freqUnit}`;
+                      }
+                    },
                     grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() }
                   },
                   y: {
@@ -623,10 +640,8 @@
                     callbacks: {
                       label: context => {
                         const data = context.raw;
-                        const freq = data.x * freqUnit;
-                        const isLowBand = ['VLF', 'LW', 'SW'].includes(data.band);
                         return [
-                          `Frecuencia: ${freq >= 1000 ? (freq / 1000).toFixed(1) + ' MHz' : freq.toFixed(isLowBand ? 3 : 0) + ' kHz'}`,
+                          `Frecuencia: ${data.x} ${data.unit}`,
                           `Banda: ${data.band}`,
                           `Intensidad: ${data.y} dBµV`,
                           `Nombre: ${data.stationName}`,
@@ -644,12 +659,16 @@
             chartRef.current = null;
           }
         }
-      }, [chartLogs]);
+      }, [chartLogs, logs, chartFilterUnit]);
 
       const addOrUpdateLog = () => {
+        if (!frequency || !/^\d+(\.\d{0,3})?$/.test(frequency)) {
+          showNotification('Por favor, introduce una frecuencia válida (entero o decimal con hasta tres decimales, ej. 123, 123.456).');
+          return;
+        }
         const freqKHz = convertToKHz(frequency, unit);
-        if (!frequency || isNaN(freqKHz) || freqKHz <= 0 || !signalStrength || isNaN(signalStrength) || signalStrength > 60) {
-          showNotification('Por favor, introduce una frecuencia válida (entero o decimal con hasta tres decimales para VLF, LW, SW, VHF Bajo, Aérea, VHF Alto, UHF; hasta dos para MW, FM; como 123, 123.45 o 123.456) y una intensidad de señal entre 0 y 60 dBµV.');
+        if (isNaN(freqKHz) || freqKHz <= 0) {
+          showNotification('La frecuencia debe ser un número positivo.');
           return;
         }
         const matchedBand = bandRanges.find(range => freqKHz >= range.min && freqKHz <= range.max);
@@ -662,8 +681,8 @@
           showNotification('La frecuencia no puede tener más de tres decimales (ej. 123.456).');
           return;
         }
-        if (['MW', 'FM'].includes(matchedBand.name) && decimalPlaces > 2) {
-          showNotification('Las bandas MW y FM solo permiten hasta dos decimales (ej. 1530 o 98.35).');
+        if (!signalStrength || isNaN(signalStrength) || signalStrength > 60 || signalStrength < 0) {
+          showNotification('La intensidad de señal debe estar entre 0 y 60 dBµV.');
           return;
         }
         if (notes.length > 150) {
@@ -672,7 +691,8 @@
         }
 
         const newLog = {
-          frequency: freqKHz,
+          frequency: frequency, // Store as string to preserve exact input
+          unit: unit,
           band: matchedBand.name,
           stationName,
           country,
@@ -707,17 +727,8 @@
 
       const editLog = (index) => {
         const log = logs[index];
-        const freq = log.frequency;
-        let displayFreq, displayUnit;
-        if (freq >= 87500 && freq <= 108000) {
-          displayFreq = (freq / 1000).toString();
-          displayUnit = 'MHz';
-        } else {
-          displayFreq = freq.toString();
-          displayUnit = 'kHz';
-        }
-        setFrequency(displayFreq);
-        setUnit(displayUnit);
+        setFrequency(log.frequency);
+        setUnit(log.unit);
         setBand(log.band);
         setStationName(log.stationName);
         setCountry(log.country);
@@ -766,7 +777,7 @@
         setShowExportModal(false);
         const formattedLogs = logs.map(log => ({
           ...log,
-          frequency: formatFrequency(log.frequency)
+          frequency: formatFrequency(log.frequency, log.unit)
         }));
         if (format === 'json') {
           const dataStr = JSON.stringify(formattedLogs, null, 2);
@@ -800,7 +811,7 @@
               const importedLogs = JSON.parse(e.target.result);
               const convertedLogs = importedLogs.map(log => ({
                 ...log,
-                frequency: typeof log.frequency === 'string' ? convertToKHz(log.frequency.replace(/[^0-9.]/g, ''), log.frequency.includes('MHz') ? 'MHz' : 'kHz') : log.frequency,
+                frequency: typeof log.frequency === 'string' ? log.frequency : log.frequency.toString(),
                 stationName: window.DOMPurify.sanitize(log.stationName || ''),
                 country: window.DOMPurify.sanitize(log.country || ''),
                 receptionLocation: window.DOMPurify.sanitize(log.receptionLocation || ''),
@@ -829,12 +840,13 @@
               const importedLogs = XLSX.utils.sheet_to_json(worksheet);
 
               const convertedLogs = importedLogs.map(row => ({
-                frequency: typeof row.frequency === 'string' ? convertToKHz(row.frequency.replace(/[^0-9.]/g, ''), row.frequency.includes('MHz') ? 'MHz' : 'kHz') : parseFloat(row.frequency),
+                frequency: typeof row.frequency === 'string' ? row.frequency : row.frequency.toString(),
+                unit: row.unit || (parseFloat(row.frequency) >= 1000 ? 'MHz' : 'kHz'),
                 band: row.band,
                 stationName: window.DOMPurify.sanitize(row.stationName || ''),
                 country: window.DOMPurify.sanitize(row.country || ''),
                 signalStrength: parseFloat(row.signalStrength),
-                hasSSB: row.hasAM === true || row.hasAM === 'true' || row.hasAM === 1,
+                hasSSB: row.hasSSB === true || row.hasSSB === 'true' || row.hasSSB === 1,
                 hasAM: row.hasAM === true || row.hasAM === 'true' || row.hasAM === 1,
                 receptionLocation: window.DOMPurify.sanitize(row.receptionLocation || ''),
                 date: row.date,
@@ -889,7 +901,7 @@
       const endIndex = startIndex + entriesPerPage;
       const paginatedLogs = sortedLogs.slice(startIndex, endIndex);
 
-      const cellColors = generateColors(paginatedLogs.length);
+      const cellColors = generateColors(logs.length).slice(startIndex, endIndex);
 
       const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -932,15 +944,19 @@
                 <div className="frequency-container">
                   <input
                     type="text"
-                    pattern="^[0-9]+(\.[0-9]{1,3})?$"
+                    pattern="^\d+(\.\d{0,3})?$"
                     value={frequency}
                     onChange={(e) => {
-                      let value = e.target.value.replace(',', '.').replace(/\s*(kHz|MHz)?$/i, '');
+                      let value = e.target.value.replace(',', '.').replace(/[^0-9.]/g, '');
+                      if (value.includes('.')) {
+                        const parts = value.split('.');
+                        value = `${parts[0]}.${parts[1].slice(0, 3)}`;
+                      }
                       setFrequency(value);
                     }}
                     className="mt-1 p-2 border rounded w-2/3"
                     placeholder="Ej: 98.3 o 1530"
-                    title="Ingrese un número entero o decimal con hasta tres decimales para VLF, LW, SW, VHF Bajo, Aérea, VHF Alto, UHF (ej. 123.456); hasta dos para MW, FM (ej. 98.35)"
+                    title="Ingrese un número entero o decimal con hasta tres decimales (ej. 123.456)"
                     id="frequency-input"
                     aria-describedby="frequency-description"
                   />
@@ -1107,7 +1123,7 @@
                 <div className="band-count-grid mt-2">
                   <div>VLF: {stats.bandsCount.VLF}</div>
                   <div>LW: {stats.bandsCount.LW}</div>
-                  <div>MW: {stats.bandsCount.MW}</div>
+                  <div> MW: {stats.bandsCount.MW}</div>
                   <div>SW: {stats.bandsCount.SW}</div>
                   <div>VHF Bajo: {stats.bandsCount['VHF Bajo']}</div>
                   <div>FM: {stats.bandsCount.FM}</div>
@@ -1291,7 +1307,7 @@
                           className={`p-2 border ${darkMode ? 'dark' : ''} text-center frequency-cell`} 
                           style={{ backgroundColor: colorCells ? cellColors[index] : (darkMode ? '#000' : '#fff') }}
                         >
-                          {formatFrequency(log.frequency)}
+                          {formatFrequency(log.frequency, log.unit)}
                         </td>
                         <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.band}</td>
                         <td className={`p-2 border ${darkMode ? 'dark' : ''} text-center`}>{log.stationName || '-'}</td>
@@ -1313,7 +1329,7 @@
                           <button
                             onClick={() => editLog(logs.indexOf(log))}
                             className="bg-blue-500 text-white rounded hover:bg-blue-600 action-btn"
-                            aria-label={`Editar emisora ${log.stationName || 'sin nombre'} con frecuencia ${formatFrequency(log.frequency)}`}
+                            aria-label={`Editar emisora ${log.stationName || 'sin nombre'} con frecuencia ${formatFrequency(log.frequency, log.unit)}`}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1333,7 +1349,7 @@
                           <button
                             onClick={() => deleteLog(logs.indexOf(log))}
                             className="bg-red-500 text-white rounded hover:bg-red-600 action-btn"
-                            aria-label={`Eliminar emisora ${log.stationName || 'sin nombre'} con frecuencia ${formatFrequency(log.frequency)}`}
+                            aria-label={`Eliminar emisora ${log.stationName || 'sin nombre'} con frecuencia ${formatFrequency(log.frequency, log.unit)}`}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1415,7 +1431,7 @@
                   </select>
                 </div>
                 <div className="unit-switch">
-                  {['MHz', 'kHz'].map(unitOption => (
+                  {['kHz', 'MHz'].map(unitOption => (
                     <button
                       key={unitOption}
                       onClick={() => setChartFilterUnit(unitOption)}
@@ -1431,7 +1447,7 @@
               {chartLogs.length > 0 ? (
                 <>
                   <div className="sr-only" aria-live="polite">
-                    Gráfico de dispersión mostrando {chartLogs.length} emisoras con intensidad de señal entre 0 y 60 dBµV y frecuencias entre {chartLogs.length ? Math.min(...chartLogs.map(log => log.frequency)) : 0} y {chartLogs.length ? Math.max(...chartLogs.map(log => log.frequency)) : 0} kHz.
+                    Gráfico de dispersión mostrando {chartLogs.length} emisoras con intensidad de señal entre 0 y 60 dBµV y frecuencias entre {chartLogs.length ? Math.min(...chartLogs.map(log => parseFloat(log.frequency))) : 0} y ${chartLogs.length ? Math.max(...chartLogs.map(log => parseFloat(log.frequency))) : 0} {chartFilterUnit}.
                   </div>
                   <canvas
                     id="signalChart"
@@ -1442,7 +1458,7 @@
                 </>
               ) : (
                 <img
-                  src={darkMode ? 'https://i.ibb.co/0pRS8304/nothinginverted.webp' : 'https://i.ibb.co/d4WjM9NT/nothing.webp'}
+                  src={darkMode ? 'https://i.ibb.co/0pRs8304/nothinginverted.webp' : 'https://i.ibb.co/d4WqM9NT/nothing.webp'}
                   alt="No hay datos para mostrar en el gráfico"
                   className="no-data-image"
                 />
