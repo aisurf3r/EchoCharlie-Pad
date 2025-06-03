@@ -619,12 +619,12 @@
                     min: Math.max(0, minFreq - (freqUnit === 'MHz' ? 0.1 : 100)),
                     max: maxFreq + (freqUnit === 'MHz' ? 0.1 : 100),
                     ticks: {
-                      callback: function(value) {
-                        // Format tick to match stored frequency string
-                        const log = chartLogs.find(log => parseFloat(log.frequency) === value);
-                        return log ? `${log.frequency} ${freqUnit}` : `${value} ${freqUnit}`;
-                      }
-                    },
+                    callback: function(value) {
+                    // Busca el log que coincida exactamente con la frecuencia como cadena
+                    const log = chartLogs.find(log => log.frequency === value.toString());
+                    return log ? `${log.frequency} ${freqUnit}` : `${value} ${freqUnit}`;
+                    }
+                  },
                     grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() }
                   },
                   y: {
