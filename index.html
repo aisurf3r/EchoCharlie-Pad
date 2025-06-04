@@ -597,8 +597,9 @@
                 datasets: [{
                   label: 'Emisoras',
                   data: chartLogs.map((log, index) => ({
-                    x: log.frequency, // Store as string to preserve decimals
+                    x: parseFloat(log.frequency), // Use number for plotting
                     y: log.signalStrength,
+                    originalFrequency: log.frequency, // Store original string
                     stationName: log.stationName || 'Desconocida',
                     country: log.country || 'Desconocido',
                     receptionLocation: log.receptionLocation || 'Desconocido',
@@ -614,17 +615,18 @@
               options: {
                 scales: {
                   x: {
-                    type: 'linear',
+                    type: 'linear', // Use linear scale for numerical sorting
                     title: { display: true, text: freqLabel },
                     min: Math.max(0, minFreq - (freqUnit === 'MHz' ? 0.1 : 100)),
                     max: maxFreq + (freqUnit === 'MHz' ? 0.1 : 100),
                     ticks: {
-                    callback: function(value) {
-                    // Busca el log que coincida exactamente con la frecuencia como cadena
-                    const log = chartLogs.find(log => log.frequency === value.toString());
-                    return log ? `${log.frequency} ${freqUnit}` : `${value} ${freqUnit}`;
-                    }
-                  },
+                      callback: function(value) {
+                        // Find the log with the exact frequency value
+                        const log = chartLogs.find(log => Math.abs(parseFloat(log.frequency) - value) < 0.0001);
+                        return log ? `${log.frequency} ${freqUnit}` : `${value.toFixed(3)} ${freqUnit}`;
+                      },
+                      maxTicksLimit: 10 // Limit number of ticks to avoid clutter
+                    },
                     grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() }
                   },
                   y: {
@@ -641,7 +643,7 @@
                       label: context => {
                         const data = context.raw;
                         return [
-                          `Frecuencia: ${data.x} ${data.unit}`,
+                          `Frecuencia: ${data.originalFrequency} ${data.unit}`, // Use original frequency string
                           `Banda: ${data.band}`,
                           `Intensidad: ${data.y} dBµV`,
                           `Nombre: ${data.stationName}`,
