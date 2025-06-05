@@ -589,6 +589,8 @@
             const freqLabel = `Frecuencia (${freqUnit})`;
             const allColors = generateColors(logs.length);
             const chartColors = chartLogs.map(log => allColors[logs.indexOf(log)]);
+            const range = maxFreq - minFreq;
+            const stepSize = freqUnit === 'MHz' ? 10: range / 20; // Smaller step for MHz
 
             const ctx = canvas.getContext('2d');
             chartRef.current = new Chart(ctx, {
@@ -617,15 +619,18 @@
                   x: {
                     type: 'linear', // Use linear scale for numerical sorting
                     title: { display: true, text: freqLabel },
-                    min: Math.max(0, minFreq - (freqUnit === 'MHz' ? 0.1 : 100)),
-                    max: maxFreq + (freqUnit === 'MHz' ? 0.1 : 100),
+                    min: Math.max(0, Math.floor(minFreq / 10) * 10),
+                    max: maxFreq,
                     ticks: {
                       callback: function(value) {
                         // Find the log with the exact frequency value
                         const log = chartLogs.find(log => Math.abs(parseFloat(log.frequency) - value) < 0.0001);
                         return log ? `${log.frequency} ${freqUnit}` : `${value.toFixed(3)} ${freqUnit}`;
                       },
-                      maxTicksLimit: 10 // Limit number of ticks to avoid clutter
+                      maxTicksLimit: 20, // Increased to allow more ticks
+                      stepSize: stepSize, // Explicit step size
+                      autoSkip: false, // Show all calculated ticks
+                      padding: 10 // Add padding to prevent overlap
                     },
                     grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() }
                   },
@@ -635,6 +640,14 @@
                     max: 70,
                     grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() }
                   }
+                },
+                layout: {
+                  padding: {
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: 20
+                }
                 },
                 plugins: {
                   legend: { display: false },
@@ -903,7 +916,7 @@
       const endIndex = startIndex + entriesPerPage;
       const paginatedLogs = sortedLogs.slice(startIndex, endIndex);
 
-      const cellColors = generateColors(logs.length).slice(startIndex, endIndex);
+      const allColors = generateColors(logs.length); // Generate colors for all logs
 
       const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -1307,7 +1320,7 @@
                       <tr key={index} className={`${darkMode ? '' : 'hover:bg-gray-100'}`}>
                         <td 
                           className={`p-2 border ${darkMode ? 'dark' : ''} text-center frequency-cell`} 
-                          style={{ backgroundColor: colorCells ? cellColors[index] : (darkMode ? '#000' : '#fff') }}
+                          style={{ backgroundColor: colorCells ? allColors[logs.indexOf(log)] : (darkMode ? '#000' : '#fff') }}
                         >
                           {formatFrequency(log.frequency, log.unit)}
                         </td>
@@ -1449,7 +1462,7 @@
               {chartLogs.length > 0 ? (
                 <>
                   <div className="sr-only" aria-live="polite">
-                    Gráfico de dispersión mostrando {chartLogs.length} emisoras con intensidad de señal entre 0 y 60 dBµV y frecuencias entre {chartLogs.length ? Math.min(...chartLogs.map(log => parseFloat(log.frequency))) : 0} y ${chartLogs.length ? Math.max(...chartLogs.map(log => parseFloat(log.frequency))) : 0} {chartFilterUnit}.
+                    Gráfico de dispersión mostrando {chartLogs.length} emisoras con intensidad de señal entre 0 y 60 dBµV y frecuencias entre ${chartLogs.length ? Math.min(...chartLogs.map(log => parseFloat(log.frequency))) : 0} y ${chartLogs.length ? Math.max(...chartLogs.map(log => parseFloat(log.frequency))) : 0} ${chartFilterUnit}.
                   </div>
                   <canvas
                     id="signalChart"
