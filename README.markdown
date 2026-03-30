@@ -163,4 +163,4 @@ Licenciado bajo la Licencia MIT. Ver LICENSE para detalles.
 
 ## 👨‍💻 Autor
 
-Desarrollado por **aisurf3r**. ¡Sigue mi GitHub para más proyectos! 🚀
+Hecho con ❤️ by @aisurf3r. ¡Sigue mi GitHub para más proyectos! 🚀
